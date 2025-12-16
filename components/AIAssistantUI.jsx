@@ -208,15 +208,10 @@ export default function AIAssistantUI() {
     setIsThinking(true);
     setThinkingConvId(convId);
 
-    const currentConvId = convId;
-
-    // Always clear thinking state and generate response for this specific conversation
-    setIsThinking(false);
-    setThinkingConvId(null);
-    setConversations((prev) =>
-      prev.map(async (c) => {
-        if (c.id !== currentConvId) return c;
-        //  Call backend API to get assistant's reply
+    // Call API bất đồng bộ NGOÀI setConversations
+    (async () => {
+      try {
+        // Uncomment khi có backend
         const ack = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/chat`, {
           method: "POST",
           headers: {
@@ -228,23 +223,40 @@ export default function AIAssistantUI() {
           .then((data) => data?.answer)
           .catch(() => "Sorry, I couldn't process that right now.");
 
-        // Append assistant's message to the conversation
+        // Simulate API delay
+        // await new Promise((resolve) => setTimeout(resolve, 1000));
+        // const ack = "This is a placeholder response from the AI assistant.";
+
+        setIsThinking(false);
+        setThinkingConvId(null);
+
+        // Append assistant's message
         const asstMsg = {
           id: Math.random().toString(36).slice(2),
           role: "assistant",
           content: ack,
           createdAt: new Date().toISOString(),
         };
-        const msgs = [...(c.messages || []), asstMsg];
-        return {
-          ...c,
-          messages: msgs,
-          updatedAt: new Date().toISOString(),
-          messageCount: msgs.length,
-          preview: asstMsg.content.slice(0, 80),
-        };
-      })
-    );
+
+        setConversations((prev) =>
+          prev.map((c) => {
+            if (c.id !== convId) return c;
+            const msgs = [...(c.messages || []), asstMsg];
+            return {
+              ...c,
+              messages: msgs,
+              updatedAt: new Date().toISOString(),
+              messageCount: msgs.length,
+              preview: asstMsg.content.slice(0, 80),
+            };
+          })
+        );
+      } catch (error) {
+        console.error("Error sending message:", error);
+        setIsThinking(false);
+        setThinkingConvId(null);
+      }
+    })();
   }
 
   function editMessage(convId, messageId, newContent) {

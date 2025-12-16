@@ -317,9 +317,9 @@ export default function Sidebar({
                     Pin important threads for quick access.
                   </div>
                 ) : (
-                  pinned.map((c) => (
+                  pinned.map((c, index) => (
                     <ConversationRow
-                      key={c.id}
+                      key={c?.id}
                       data={c}
                       active={c.id === selectedId}
                       onSelect={() => onSelect(c.id)}
@@ -342,9 +342,9 @@ export default function Sidebar({
                     No conversations yet. Start a new one!
                   </div>
                 ) : (
-                  recent.map((c) => (
+                  recent.map((c, index) => (
                     <ConversationRow
-                      key={c.id}
+                      key={c?.id || index}
                       data={c}
                       active={c.id === selectedId}
                       onSelect={() => onSelect(c.id)}

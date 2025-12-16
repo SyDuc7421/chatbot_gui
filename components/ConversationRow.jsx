@@ -15,10 +15,15 @@ export default function ConversationRow({
   showMeta,
 }) {
   const [showMenu, setShowMenu] = useState(false);
+  const [timeAgoText, setTimeAgoText] = useState("");
   const menuRef = useRef(null);
   const count = Array.isArray(data.messages)
     ? data.messages.length
     : data.messageCount;
+
+  useEffect(() => {
+    setTimeAgoText(timeAgo(data.updatedAt));
+  }, [data.updatedAt]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -79,9 +84,11 @@ export default function ConversationRow({
             <span className="truncate text-sm font-medium tracking-tight">
               {data.title}
             </span>
-            <span className="shrink-0 text-[11px] text-zinc-500 dark:text-zinc-400">
-              {timeAgo(data.updatedAt)}
-            </span>
+            {timeAgoText && (
+              <span className="shrink-0 text-[11px] text-zinc-500 dark:text-zinc-400">
+                {timeAgoText}
+              </span>
+            )}
           </div>
           {showMeta && (
             <div className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">

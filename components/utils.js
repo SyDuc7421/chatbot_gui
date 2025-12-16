@@ -2,8 +2,21 @@ export const cls = (...c) => c.filter(Boolean).join(" ");
 
 export function timeAgo(date) {
   const d = typeof date === "string" ? new Date(date) : date;
+
+  // Validate date - return fallback if invalid
+  if (!d || isNaN(d.getTime())) {
+    return "";
+  }
+
   const now = new Date();
-  const sec = Math.max(1, Math.floor((now - d) / 1000));
+  const diffMs = now - d;
+
+  // Ensure we have a finite number
+  if (!isFinite(diffMs)) {
+    return "";
+  }
+
+  const sec = Math.max(1, Math.floor(diffMs / 1000));
   const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
   const ranges = [
     [60, "seconds"],
