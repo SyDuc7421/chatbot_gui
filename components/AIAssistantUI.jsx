@@ -2,16 +2,21 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Calendar, LayoutGrid, MoreHorizontal } from "lucide-react";
-import Sidebar from "./Sidebar";
 import Header from "./Header";
 import ChatPane from "./ChatPane";
 import GhostIconButton from "./GhostIconButton";
 import ThemeToggle from "./ThemeToggle";
+import Sidebar from "./Sidebar";
 import {
-  INITIAL_CONVERSATIONS,
-  INITIAL_TEMPLATES,
-  INITIAL_FOLDERS,
-} from "./mockData";
+  loadConversations,
+  saveConversations,
+  loadTemplates,
+  saveTemplates,
+  loadFolders,
+  saveFolders,
+  loadSelectedId,
+  saveSelectedId,
+} from "@/store/conversation";
 
 export default function AIAssistantUI() {
   const [theme, setTheme] = useState(() => {
@@ -86,16 +91,33 @@ export default function AIAssistantUI() {
     } catch {}
   }, [sidebarCollapsed]);
 
-  const [conversations, setConversations] = useState(INITIAL_CONVERSATIONS);
-  const [selectedId, setSelectedId] = useState(null);
-  const [templates, setTemplates] = useState(INITIAL_TEMPLATES);
-  const [folders, setFolders] = useState(INITIAL_FOLDERS);
-
+  // Load data from localStorage on mount
+  const [conversations, setConversations] = useState(() => loadConversations());
+  const [selectedId, setSelectedId] = useState(() => loadSelectedId());
+  const [templates, setTemplates] = useState(() => loadTemplates());
+  const [folders, setFolders] = useState(() => loadFolders());
   const [query, setQuery] = useState("");
   const searchRef = useRef(null);
 
   const [isThinking, setIsThinking] = useState(false);
   const [thinkingConvId, setThinkingConvId] = useState(null);
+
+  // Save conversations, templates, folders, and selected ID to localStorage whenever they change
+  useEffect(() => {
+    saveConversations(conversations);
+  }, [conversations]);
+
+  useEffect(() => {
+    saveTemplates(templates);
+  }, [templates]);
+
+  useEffect(() => {
+    saveFolders(folders);
+  }, [folders]);
+
+  useEffect(() => {
+    saveSelectedId(selectedId);
+  }, [selectedId]);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -153,6 +175,24 @@ export default function AIAssistantUI() {
     );
   }
 
+  function renameConversation(id, newTitle) {
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === id
+          ? { ...c, title: newTitle, updatedAt: new Date().toISOString() }
+          : c
+      )
+    );
+  }
+
+  function deleteConversation(id) {
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+    if (selectedId === id) {
+      const remaining = conversations.filter((c) => c.id !== id);
+      setSelectedId(remaining.length > 0 ? remaining[0].id : null);
+    }
+  }
+
   function createNewChat() {
     const id = Math.random().toString(36).slice(2);
     const item = {
@@ -163,7 +203,7 @@ export default function AIAssistantUI() {
       preview: "Say hello to start...",
       pinned: false,
       folder: "Work Projects",
-      messages: [], // Ensure messages array is empty for new chats
+      messages: [],
     };
     setConversations((prev) => [item, ...prev]);
     setSelectedId(id);
@@ -208,10 +248,8 @@ export default function AIAssistantUI() {
     setIsThinking(true);
     setThinkingConvId(convId);
 
-    // Call API bất đồng bộ NGOÀI setConversations
     (async () => {
       try {
-        // Uncomment khi có backend
         const ack = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/chat`, {
           method: "POST",
           headers: {
@@ -223,7 +261,7 @@ export default function AIAssistantUI() {
           .then((data) => data?.answer)
           .catch(() => "Sorry, I couldn't process that right now.");
 
-        // Simulate API delay
+        // Simulate delay for testing
         // await new Promise((resolve) => setTimeout(resolve, 1000));
         // const ack = "This is a placeholder response from the AI assistant.";
 
@@ -341,6 +379,8 @@ export default function AIAssistantUI() {
           selectedId={selectedId}
           onSelect={(id) => setSelectedId(id)}
           togglePin={togglePin}
+          onRenameConversation={renameConversation}
+          onDeleteConversation={deleteConversation}
           query={query}
           setQuery={setQuery}
           searchRef={searchRef}

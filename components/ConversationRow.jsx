@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import { MoreHorizontal, Pin, Edit3, Trash2 } from "lucide-react";
 import { cls, timeAgo } from "./utils";
 import { motion, AnimatePresence } from "framer-motion";
+import RenameDialog from "./RenameDialog";
+import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
 export default function ConversationRow({
   data,
@@ -16,6 +18,8 @@ export default function ConversationRow({
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const [timeAgoText, setTimeAgoText] = useState("");
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const menuRef = useRef(null);
   const count = Array.isArray(data.messages)
     ? data.messages.length
@@ -49,19 +53,22 @@ export default function ConversationRow({
 
   const handleRename = (e) => {
     e.stopPropagation();
-    const newName = prompt(`Rename chat "${data.title}" to:`, data.title);
-    if (newName && newName.trim() && newName !== data.title) {
-      onRename?.(data.id, newName.trim());
-    }
+    setShowRenameDialog(true);
     setShowMenu(false);
+  };
+
+  const handleRenameSubmit = (newName) => {
+    onRename?.(data.id, newName);
   };
 
   const handleDelete = (e) => {
     e.stopPropagation();
-    if (confirm(`Are you sure you want to delete "${data.title}"?`)) {
-      onDelete?.(data.id);
-    }
+    setShowDeleteDialog(true);
     setShowMenu(false);
+  };
+
+  const handleDeleteConfirm = () => {
+    onDelete?.(data.id);
   };
 
   return (
@@ -156,6 +163,24 @@ export default function ConversationRow({
       <div className="pointer-events-none absolute left-[calc(100%+6px)] top-1 hidden w-64 rounded-xl border border-zinc-200 bg-white p-3 text-xs text-zinc-700 shadow-lg dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 md:group-hover:block">
         <div className="line-clamp-6 whitespace-pre-wrap">{data.preview}</div>
       </div>
+
+      <RenameDialog
+        isOpen={showRenameDialog}
+        onClose={() => setShowRenameDialog(false)}
+        onRename={handleRenameSubmit}
+        currentName={data.title}
+        title="Rename Chat"
+        description={`Rename "${data.title}" to:`}
+      />
+
+      <DeleteConfirmDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Chat"
+        description={`Are you sure you want to delete "${data.title}"? This action cannot be undone.`}
+        confirmText="Delete"
+      />
     </div>
   );
 }
