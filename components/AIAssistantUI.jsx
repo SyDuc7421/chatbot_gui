@@ -250,7 +250,8 @@ export default function AIAssistantUI() {
 
     (async () => {
       try {
-        const ack = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/chat`, {
+        // Call internal API route (proxies to backend)
+        const ack = await fetch("/api/chat", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
